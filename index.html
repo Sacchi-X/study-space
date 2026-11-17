@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="StudySpace: a clickable prototype of a study room finder for Metro State (ICS 377, Group 1).">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>StudySpace</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a phone-sized app shell centered on a desk-colored page (full-bleed on phones), with a short project note beside it on wide screens.
+   Single light theme on purpose: this is Concept C exactly as designed in Figma. */
+:root{
+  --desk:#E8E5DF;
+  --bg:#F6F5F2;
+  --surface:#FFFFFF;
+  --ink:#1C1B22;
+  --muted:#6B6A75;
+  --line:#E4E1EA;
+  --violet:#5B47E0;
+  --violet-soft:#ECE9FD;
+  --lemon:#FFD166;
+  --lemon-soft:#FFF4D6;
+  --lemon-ink:#8A6100;
+  --mint-soft:#DDF6EC;
+  --mint-ink:#0F7A5A;
+  --coral:#E5534B;
+  --coral-soft:#FDE6E4;
+  --coral-ink:#B3261E;
+  --on-accent:#FFFFFF;
+  --shade:rgb(28 27 34 / .07);
+  --shade-strong:rgb(28 27 34 / .18);
+  --font-display:"Bricolage Grotesque","Arial Black",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --hard:0 3px 0 var(--ink);
+  --soft:0 4px 14px var(--shade);
+  --gutter-l:max(20px, env(safe-area-inset-left, 0px));
+  --gutter-r:max(20px, env(safe-area-inset-right, 0px));
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--desk);color:var(--ink);font:400 15px/1.45 var(--font-body);-webkit-font-smoothing:antialiased;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:0}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- stage ---------- */
+.stage{height:100%;display:flex;align-items:center;justify-content:center;gap:56px}
+.about{max-width:300px;display:flex;flex-direction:column;gap:14px}
+.about img{width:88px;height:auto}
+.eyebrow{margin:0;font:700 12px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.about h1{margin:0;font:800 44px/1 var(--font-display);letter-spacing:-.02em}
+.about p{margin:0;color:var(--muted)}
+.about ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.about li{display:flex;gap:10px;align-items:flex-start;font-weight:500}
+.about li::before{content:"";flex:none;width:8px;height:8px;margin-top:7px;border-radius:2px;background:var(--violet);transform:rotate(45deg)}
+.linkbtn{align-self:flex-start;background:none;border:0;padding:0;color:var(--violet);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:959px){.about{display:none}}
+
+.phone{position:relative;width:390px;height:min(844px, calc(100% - 32px));background:var(--bg);border-radius:46px;overflow:hidden;
+  box-shadow:0 0 0 10px var(--ink),0 40px 90px var(--shade-strong)}
+@media (max-width:520px){
+  body{padding-left:0;padding-right:0}
+  .stage{display:block}
+  .phone{width:100%;height:100%;border-radius:0;box-shadow:none}
+  .statusbar{display:none!important}
+}
+
+/* ---------- screen scaffold ---------- */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+.statusbar{flex:none;display:flex;justify-content:space-between;padding:14px 30px 6px;font:600 15px var(--font-body);font-variant-numeric:tabular-nums}
+.statusbar span:last-child{display:flex;gap:6px;align-items:center}
+.statusbar .batt{width:24px;height:12px;border:1.5px solid var(--ink);border-radius:4px;position:relative}
+.statusbar .batt::after{content:"";position:absolute;inset:1.5px 5px 1.5px 1.5px;background:var(--ink);border-radius:1.5px}
+.body{flex:1;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:14px;
+  padding:8px var(--gutter-r) 116px var(--gutter-l)}
+.has-actions .body{padding-bottom:186px}
+.body::-webkit-scrollbar{width:0}
+.actions{position:absolute;left:0;right:0;bottom:92px;display:flex;gap:12px;padding:22px var(--gutter-r) 10px var(--gutter-l);
+  background:linear-gradient(to top, var(--bg) 72%, transparent)}
+.actions.stack{flex-direction:column}
+.actions .btn{flex:1}
+@media (prefers-reduced-motion:no-preference){
+  .screen.fwd{animation:in-r .22s ease-out}
+  .screen.bwd{animation:in-l .22s ease-out}
+  @keyframes in-r{from{transform:translateX(28px);opacity:.4}}
+  @keyframes in-l{from{transform:translateX(-28px);opacity:.4}}
+}
+
+/* ---------- type ---------- */
+h1,h2,h3,p{margin:0}
+.display{font:800 36px/1.02 var(--font-display);letter-spacing:-.02em;text-wrap:balance}
+.h2{font:800 30px/1.05 var(--font-display);letter-spacing:-.02em;text-wrap:balance}
+.h3{font:800 19px/1.15 var(--font-display);letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.label{font:700 15px var(--font-body)}
+.hl{display:inline-block;background:var(--lemon);border-radius:10px;padding:0 8px 2px;transform:rotate(-1.5deg)}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;gap:12px;min-height:48px}
+.topbar h1{flex:1;font:800 22px/1.1 var(--font-display);letter-spacing:-.01em}
+.topbar .right{font-weight:600;color:var(--violet);background:none;border:0;padding:6px 0}
+.count{font:700 13px var(--font-body);color:var(--violet);background:var(--violet-soft);border-radius:8px;padding:3px 9px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 22px;border-radius:16px;
+  font:600 16px var(--font-body);border:1.5px solid var(--ink);box-shadow:var(--hard);transition:transform .1s,box-shadow .1s;white-space:nowrap}
+.btn:active:not([disabled]){transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.btn-primary{background:var(--violet);color:var(--on-accent)}
+.btn-secondary{background:var(--surface);color:var(--ink)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.iconbtn{flex:none;width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:var(--surface);border:1.5px solid var(--ink);box-shadow:var(--hard);transition:transform .1s,box-shadow .1s}
+.iconbtn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.iconbtn.saved{color:var(--coral)}
+.iconbtn.saved svg{fill:currentColor}
+.link{background:none;border:0;padding:4px 0;color:var(--violet);font-weight:600;font-size:14px}
+
+/* ---------- chips / pills ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;background:var(--surface);border:1.5px solid var(--line);font:500 14px var(--font-body);color:var(--ink)}
+button.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"],.chip.on{background:var(--violet);border-color:var(--violet);color:var(--on-accent);font-weight:600}
+.chip .x{font-size:15px;line-height:1;opacity:.85}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 8px;border-radius:8px;font:600 12px var(--font-body);white-space:nowrap}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill-open{background:var(--mint-soft);color:var(--mint-ink)}
+.pill-booked{background:var(--coral-soft);color:var(--coral-ink)}
+.pill-walk{background:var(--lemon-soft);color:var(--lemon-ink)}
+.pill-yours{background:var(--violet-soft);color:var(--violet)}
+
+/* ---------- home ---------- */
+.toprow{display:flex;justify-content:space-between;align-items:center}
+.logo{width:66px;height:48px;object-fit:contain}
+.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet);border:0}
+.greet{display:flex;flex-direction:column;gap:4px}
+.greet .display{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.greet .line2{display:flex;align-items:center;gap:10px}
+.search{display:flex;gap:10px}
+.field{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;min-height:52px;background:var(--surface);border:1.5px solid var(--line);border-radius:16px}
+.field:focus-within{border-color:var(--violet)}
+.field.loud{border-color:var(--ink);box-shadow:var(--hard)}
+.field.err{border-color:var(--coral)}
+.field svg{color:var(--muted)}
+.field input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:400 15px var(--font-body);color:var(--ink)}
+.field input::placeholder{color:var(--muted)}
+.filterbtn{flex:none;width:52px;height:52px;display:grid;place-items:center;border-radius:16px;background:var(--violet);color:var(--on-accent);border:1.5px solid var(--ink);box-shadow:var(--hard)}
+.bento{display:grid;grid-template-columns:1fr 136px;gap:12px}
+.big{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:168px;padding:16px;border-radius:22px;text-align:left;
+  background:var(--violet);color:var(--on-accent);border:1.5px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
+.big b{font:800 52px/1 var(--font-display);letter-spacing:-.02em}
+.big span{font-weight:600}
+.big .go{margin-top:auto;display:flex;align-items:center;gap:6px;font:700 13px var(--font-body)}
+.big .spark{position:absolute;top:14px;right:16px}
+.side{display:grid;gap:12px}
+.mini{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:10px 14px;border-radius:18px;text-align:left;border:1.5px solid transparent}
+.mini b{font:800 26px/1.05 var(--font-display);display:flex;align-items:center;gap:6px}
+.mini span{font:600 12px var(--font-body)}
+.mini.saved{background:var(--lemon-soft);color:var(--lemon-ink)}
+.mini.saved svg{fill:currentColor}
+.mini.bk{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.mini.bk span{color:var(--muted)}
+.sechead{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
+
+/* ---------- room card ---------- */
+.list{display:flex;flex-direction:column;gap:12px}
+.card{position:relative;display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;align-items:center;padding:12px;background:var(--surface);
+  border:1.5px solid var(--line);border-radius:20px;box-shadow:var(--soft);transition:border-color .15s}
+.card:hover{border-color:var(--muted)}
+.card-hit{position:absolute;inset:0;z-index:1;border:0;background:none;border-radius:20px}
+.tile{width:72px;height:84px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tile small{font:700 10px var(--font-body);letter-spacing:.08em}
+.tile b{font:800 28px/1.05 var(--font-display)}
+.t-violet{background:var(--violet-soft);color:var(--violet)}
+.t-lemon{background:var(--lemon-soft);color:var(--lemon-ink)}
+.t-coral{background:var(--coral-soft);color:var(--coral-ink)}
+.info{display:flex;flex-direction:column;gap:5px;min-width:0;padding-right:30px}
+.info .nm{font:600 16px var(--font-body)}
+.info .where{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.info .where svg{width:14px;height:14px}
+.info .bottom{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-right:-30px}
+.info .meta{font:500 12px var(--font-body);color:var(--muted)}
+.heart{position:absolute;top:8px;right:8px;z-index:2;width:38px;height:38px;display:grid;place-items:center;border:0;border-radius:10px;background:none;color:var(--muted)}
+.heart[aria-pressed="true"]{color:var(--coral)}
+.heart[aria-pressed="true"] svg{fill:currentColor}
+.tip{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--lemon-soft);color:var(--lemon-ink);font:600 13px var(--font-body)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:28px 12px;border:1.5px dashed var(--line);border-radius:20px}
+.empty p{max-width:30ch}
+
+/* ---------- filters ---------- */
+.seg{display:flex;gap:4px;padding:4px;background:var(--surface);border:1.5px solid var(--line);border-radius:14px}
+.seg button{flex:1;padding:10px 0;border:0;border-radius:10px;background:none;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--violet);color:var(--on-accent)}
+.opts3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);font:600 13px var(--font-body)}
+.opt[aria-pressed="true"]{background:var(--violet-soft);border-color:var(--violet);color:var(--violet)}
+.opts2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.toggle{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 12px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);font:600 14px var(--font-body);text-align:left}
+.toggle span{flex:1}
+.toggle .ck{visibility:hidden}
+.toggle[aria-pressed="true"]{background:var(--violet-soft);border-color:var(--violet);color:var(--violet)}
+.toggle[aria-pressed="true"] .ck{visibility:visible}
+.group{display:flex;flex-direction:column;gap:10px}
+
+/* ---------- details ---------- */
+.hero{position:relative;height:176px;border-radius:22px;background:var(--violet-soft);overflow:hidden;flex:none}
+.hero .desk{position:absolute;right:14px;bottom:4px;width:170px}
+.hero .spark{position:absolute;left:46px;bottom:34px}
+.sticker{position:absolute;left:18px;top:20px;padding:5px 10px;border-radius:8px;background:var(--lemon);border:1.5px solid var(--ink);font:700 13px var(--font-body);transform:rotate(-4deg)}
+.where-line{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:500;font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{padding:12px 14px;border-radius:16px;background:var(--surface);border:1.5px solid var(--line)}
+.stat small{display:block;font:700 11px var(--font-body);letter-spacing:.06em;color:var(--muted)}
+.stat b{font:800 20px/1.2 var(--font-display)}
+.about-room{color:var(--muted);line-height:1.55;max-width:60ch}
+
+/* ---------- availability ---------- */
+.monthrow{display:flex;justify-content:space-between;align-items:center}
+.days{display:flex;justify-content:space-between;gap:4px}
+.day{width:44px;height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line)}
+.day small{font:600 11px var(--font-body);color:var(--muted)}
+.day b{font:800 20px/1 var(--font-display)}
+.day[aria-pressed="true"]{background:var(--violet);border-color:var(--ink);box-shadow:var(--hard);color:var(--on-accent)}
+.day[aria-pressed="true"] small{color:var(--on-accent)}
+.dayhead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.legend{display:flex;gap:10px;font:500 11px var(--font-body);color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend i{width:8px;height:8px;border-radius:50%}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.slot{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:9px 14px;border-radius:14px;text-align:left;background:var(--surface);border:1.5px solid var(--line)}
+.slot b{display:block;font:600 15px var(--font-body);font-variant-numeric:tabular-nums}
+.slot small{display:block;font:600 11px var(--font-body)}
+.slot.open small{color:var(--mint-ink)}
+.slot.booked{background:var(--coral-soft);border-color:transparent}
+.slot.booked b{color:var(--muted)}
+.slot.booked small{color:var(--coral-ink)}
+.slot.walk{background:var(--lemon-soft);border-color:transparent}
+.slot.walk small{color:var(--lemon-ink)}
+.slot.past{opacity:.4}
+.slot.past small{color:var(--muted)}
+.slot.yours{background:var(--violet-soft);border-color:transparent}
+.slot.yours small{color:var(--violet)}
+.slot[disabled]{cursor:not-allowed}
+.slot[aria-pressed="true"]{background:var(--violet);border-color:var(--ink);box-shadow:var(--hard);color:var(--on-accent)}
+.slot[aria-pressed="true"] small{color:var(--on-accent)}
+.summary{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--lemon-soft);color:var(--lemon-ink);font-weight:600;font-size:14px}
+
+/* ---------- booking ---------- */
+.ticket{border-radius:20px;background:var(--surface);border:1.5px solid var(--ink);box-shadow:0 4px 0 var(--ink);overflow:hidden;flex:none}
+.ticket-head{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 18px;background:var(--violet);color:var(--on-accent)}
+.ticket-head b{display:block;font:800 28px/1.05 var(--font-display)}
+.ticket-head span{font-size:13px;font-weight:500;opacity:.9}
+.ticket-rows{display:flex;flex-direction:column;gap:14px;padding:16px 18px 18px}
+.trow{display:flex;align-items:center;gap:12px}
+.trow .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--violet-soft);color:var(--violet)}
+.trow small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.trow b{font-weight:600}
+.help{font-size:12px;color:var(--muted);font-weight:500}
+.help.bad{color:var(--coral-ink)}
+
+/* ---------- confirmation ---------- */
+.celebrate{position:relative;height:178px;flex:none}
+.celebrate .confetti{position:absolute;inset:0;width:100%;height:100%}
+.checkdisc{position:absolute;left:50%;top:26px;transform:translateX(-50%);width:120px;height:120px;border-radius:50%;display:grid;place-items:center;
+  background:var(--violet);border:1.5px solid var(--ink);box-shadow:0 4px 0 var(--ink);color:var(--on-accent)}
+.checkdisc svg{width:58px;height:58px;stroke-width:3}
+.center{text-align:center}
+.sumbox{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:18px;background:var(--surface);border:1.5px solid var(--line)}
+.sumbox div{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.sumbox span{color:var(--muted);font-weight:500}
+.sumbox b{font-weight:600;text-align:right}
+
+/* ---------- profile ---------- */
+.me{display:flex;align-items:center;gap:14px}
+.me .avatar{width:52px;height:52px}
+.bk{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:20px;background:var(--surface);border:1.5px solid var(--line);box-shadow:var(--soft)}
+.bk-top{display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center}
+.bk .tile{width:56px;height:62px}
+.bk .tile b{font-size:22px}
+.bk-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bk-actions .q{flex:1;font:600 13px var(--font-body)}
+.sbtn{padding:8px 12px;border-radius:10px;font:600 13px var(--font-body);background:var(--surface);border:1.5px solid var(--line)}
+.sbtn.danger{background:var(--coral-soft);border-color:var(--coral-soft);color:var(--coral-ink)}
+.note{font-size:12px;color:var(--muted);padding:12px 14px;border-radius:14px;background:var(--violet-soft)}
+
+/* ---------- tab bar + toast ---------- */
+.tabbar{position:absolute;left:16px;right:16px;bottom:16px;height:68px;display:flex;gap:6px;padding:8px;background:var(--surface);
+  border:1px solid var(--line);border-radius:24px;box-shadow:0 8px 24px var(--shade-strong);z-index:5}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:16px;background:none;color:var(--muted);font:500 11px var(--font-body)}
+.tabbar button[aria-current="page"]{background:var(--violet-soft);color:var(--violet);font-weight:600}
+.tabbar button[aria-current="page"] .fillable{fill:currentColor}
+.toast{position:absolute;left:50%;top:58px;transform:translate(-50%,-12px);opacity:0;pointer-events:none;z-index:9;display:flex;align-items:center;gap:8px;
+  padding:10px 16px;border-radius:14px;background:var(--ink);color:var(--on-accent);font:600 13px var(--font-body);white-space:nowrap;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:520px){.toast{top:16px}}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.1A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 7.5 2.8c0 5.5-7.5 10.1-7.5 10.1z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2.5 19c.7-3 2.8-4.5 5.5-4.5s4.8 1.5 5.5 4.5M10.5 19c.7-3 2.8-4.5 5.5-4.5s4.8 1.5 5.5 4.5"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M15 10h3M15 13h3"/></symbol>
+  <symbol id="i-volx" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l4 5M21 9.5l-4 5"/></symbol>
+  <symbol id="i-vol1" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 10a3 3 0 0 1 0 4"/></symbol>
+  <symbol id="i-vol2" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 10a3 3 0 0 1 0 4M19 7.5a7 7 0 0 1 0 9"/></symbol>
+  <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20l4-4 4 4M7 9l3 2 4-3 3 2"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-proj" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="2"/><circle cx="15" cy="12.5" r="2.5"/><path d="M6 12h4M7 17v3M17 17v3"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/></symbol>
+</svg>
+
+<div class="stage">
+  <aside class="about" aria-label="About this prototype">
+    <img src="data:image/png;base64,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" alt="StudySpace logo">
+    <p class="eyebrow">ICS 377 · Group 1 · Concept C</p>
+    <h1>StudySpace</h1>
+    <p>A clickable prototype of our study room finder for Metro State. Rooms and schedules are sample data.</p>
+    <ul>
+      <li>Search, or tap a vibe like Quiet, to narrow the rooms</li>
+      <li>Tap the heart on a room to save it</li>
+      <li>Pick an open time and book with a Star ID such as ab1234cd</li>
+      <li>See or cancel bookings under Profile</li>
+    </ul>
+    <button class="linkbtn" type="button" data-a="reset-demo">Reset the demo</button>
+  </aside>
+  <main class="phone" id="app" aria-live="off"></main>
+</div>
+
+<script>
+(() => {
+const LOGO = "data:image/png;base64,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";
+const ROOMS = [
+  {id:"nm01",num:"01",name:"New Main",building:"New Main",where:"2nd floor · east wing",size:"2–4",noise:"Quiet",outlets:6,amen:["Whiteboard","Outlets","Projector","Natural light"],tone:"violet",
+   about:"A bright corner room with a wall-to-wall whiteboard and plenty of outlets. Great for small groups that still want it quiet."},
+  {id:"lib04",num:"04",name:"Library",building:"Library",where:"Learning Center · 3rd floor",size:"2–4",noise:"Silent",outlets:4,amen:["Outlets","Natural light"],tone:"lemon",
+   about:"A silent room on the library's top floor with big windows. Best for heads-down reading and exam prep."},
+  {id:"fh07",num:"07",name:"Founders Hall",building:"Founders Hall",where:"1st floor · by the café",size:"2–4",noise:"Quiet",outlets:4,amen:["Whiteboard","Outlets"],tone:"coral",
+   about:"A cozy room next to the café. Quiet enough to focus, close enough for a coffee run."},
+  {id:"nm03",num:"03",name:"New Main",building:"New Main",where:"3rd floor · west wing",size:"5–8",noise:"Lively",outlets:8,amen:["Whiteboard","Outlets","Big screen","Video call"],tone:"lemon",
+   about:"A bigger room with a wall screen and a camera for video calls. Good for group projects and practice presentations."},
+  {id:"secA",num:"A",name:"SEC Lab A",building:"Science Ed Center",where:"1st floor · north side",size:"5–8",noise:"Lively",outlets:12,amen:["Whiteboard","Outlets","Big screen","Projector"],tone:"violet",
+   about:"A lab-style room with long benches and a big screen. Handy for STEM groups working through problem sets."},
+  {id:"secB",num:"B",name:"SEC Lab B",building:"Science Ed Center",where:"2nd floor · south side",size:"2–4",noise:"Quiet",outlets:6,amen:["Whiteboard","Outlets","Natural light"],tone:"coral",
+   about:"A small, quiet room with a whiteboard wall and afternoon sun."},
+  {id:"lib05",num:"05",name:"Library",building:"Library",where:"Learning Center · 2nd floor",size:"Solo",noise:"Silent",outlets:2,amen:["Outlets"],tone:"violet",
+   about:"A one-person study booth with a desk lamp and two outlets. Book it when you need zero distractions."},
+  {id:"sjh12",num:"12",name:"St. John's Hall",building:"St. John's Hall",where:"Lower level · near TRIO",size:"9+",noise:"Lively",outlets:10,amen:["Whiteboard","Projector","Big screen","Outlets"],tone:"lemon",
+   about:"The largest room on the list, with a projector and rows of tables. Made for club meetings and big study groups."}
+];
+const BUILDINGS = ["New Main","St. John's Hall","Founders Hall","Science Ed Center","Library"];
+const SIZES = ["Solo","2–4","5–8","9+"];
+const NOISES = [["Silent","volx"],["Quiet","vol1"],["Lively","vol2"]];
+const AMENS = [["Whiteboard","board"],["Outlets","plug"],["Big screen","screen"],["Projector","proj"],["Video call","video"],["Natural light","sun"]];
+const HOURS = [8,9,10,11,12,13,14,15,16,17];
+const NOW_H = Math.min(17, Math.max(8, new Date().getHours()));
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const DOW_LONG = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MON_LONG = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const today = new Date(); today.setHours(0,0,0,0);
+const DAYS = Array.from({length:7}, (_,i) => { const d = new Date(today); d.setDate(d.getDate()+i); return d; });
+const key = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const fromKey = k => { const [y,m,d] = k.split("-").map(Number); return new Date(y, m-1, d); };
+const TODAY = key(today);
+const h12 = h => ((h + 11) % 12) + 1;
+const ap = h => h < 12 ? "AM" : "PM";
+const range = h => ap(h) === ap(h+1) ? `${h12(h)}:00 – ${h12(h+1)}:00 ${ap(h)}` : `${h12(h)}:00 ${ap(h)} – ${h12(h+1)}:00 ${ap(h+1)}`;
+const shortDate = k => { const d = fromKey(k); return `${DOW[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}`; };
+const longDate = k => { const d = fromKey(k); return `${DOW_LONG[d.getDay()]}, ${MON_LONG[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ic = (n, extra="") => `<svg class="i ${extra}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const room = id => ROOMS.find(r => r.id === id);
+
+// ---- per-browser persistence (convenience only) ----
+const store = {
+  get(k, fb){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch { return fb; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const SEED_SAVED = ["nm01","lib04","secA"];
+const S = {
+  stack:["home"], dir:"", room:null, query:"",
+  f:{building:null,size:null,noise:null,amen:[]},
+  saved:new Set(store.get("ss-c-saved", SEED_SAVED)),
+  bookings:store.get("ss-c-bookings", []).filter(b => b.date >= TODAY),
+  day:0, slot:null, star:"", starErr:"", last:null, cancelAsk:null
+};
+const persist = () => { store.set("ss-c-saved", [...S.saved]); store.set("ss-c-bookings", S.bookings); };
+
+// ---- schedule model (deterministic sample data) ----
+function hs(str){ let h = 2166136261; for (const c of str){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+function slotState(r, k, h){
+  if (S.bookings.some(b => b.roomId === r.id && b.date === k && b.hour === h)) return "yours";
+  if (k === TODAY && h < NOW_H) return "past";
+  if (r.id === "nm01" && k === TODAY && (h === NOW_H || h === NOW_H + 1)) return "open";
+  const v = hs(r.id + k + h);
+  return v < .58 ? "open" : v < .82 ? "booked" : "walk";
+}
+function nowState(r){ const s = slotState(r, TODAY, NOW_H); return s === "past" ? "booked" : s; }
+const PILL = {open:["open","Open now"],booked:["booked","Booked"],walk:["walk","Walk-in"],yours:["yours","Yours"]};
+const pill = st => { const [c,l] = PILL[st]; return `<span class="pill pill-${c}"><i></i>${l}</span>`; };
+
+// ---- filtering ----
+function matches(r){
+  const q = S.query.trim().toLowerCase();
+  if (q && !`${r.name} ${r.building} ${r.where} room ${r.num}`.toLowerCase().includes(q)) return false;
+  if (S.f.building && r.building !== S.f.building) return false;
+  if (S.f.size && r.size !== S.f.size) return false;
+  if (S.f.noise && r.noise !== S.f.noise) return false;
+  if (S.f.amen.some(a => !r.amen.includes(a))) return false;
+  return true;
+}
+const rank = {open:0,walk:1,yours:2,booked:3};
+const results = () => ROOMS.filter(matches).sort((a,b) => rank[nowState(a)] - rank[nowState(b)]);
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+// ---- shared pieces ----
+const statusbar = () => `<div class="statusbar" aria-hidden="true"><span>9:41</span><span>${ic("wifi")}<span class="batt"></span></span></div>`;
+const topbar = (title, right="") => `<header class="topbar"><button class="iconbtn" data-a="back" aria-label="Back">${ic("chev-l")}</button><h1>${title}</h1>${right}</header>`;
+function card(r){
+  const st = nowState(r), sv = S.saved.has(r.id);
+  return `<article class="card">
+    <button class="card-hit" data-a="open" data-id="${r.id}" aria-label="Room ${r.num}, ${esc(r.name)}, ${PILL[st][1]}"></button>
+    <div class="tile t-${r.tone}" aria-hidden="true"><small>ROOM</small><b>${r.num}</b></div>
+    <div class="info" aria-hidden="true">
+      <span class="nm">${esc(r.name)}</span>
+      <span class="where">${ic("pin")}${esc(r.where)}</span>
+      <span class="bottom"><span class="meta">${r.size} seats · ${r.noise}</span>${pill(st)}</span>
+    </div>
+    <button class="heart" data-a="save" data-id="${r.id}" aria-pressed="${sv}" aria-label="${sv ? "Remove from saved" : "Save room"}">${ic("heart")}</button>
+  </article>`;
+}
+const sparkle = (s=24) => `<svg class="spark" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C13 9 15 11 22 12C15 13 13 15 12 22C11 15 9 13 2 12C9 11 11 9 12 2Z" fill="var(--lemon)" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+function nav(){
+  const top = S.stack[0];
+  const tabs = [["home","Home","home"],["saved","Saved","heart"],["profile","Profile","user"]];
+  return `<nav class="tabbar" aria-label="Main">${tabs.map(([t,l,i]) =>
+    `<button data-a="tab" data-t="${t}" ${top === t ? 'aria-current="page"' : ""}>${ic(i, i==="heart" ? "fillable" : "")}${l}</button>`).join("")}</nav>`;
+}
+const greeting = () => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening"; };
+
+// ---- screens ----
+const SCREENS = {
+home(){
+  const open = ROOMS.filter(r => nowState(r) === "open").length;
+  const todayCount = S.bookings.filter(b => b.date === TODAY).length;
+  const pop = room("nm01");
+  const qOn = {quiet:S.f.noise === "Quiet", group:S.f.size === "5–8", outlets:S.f.amen.includes("Outlets"), board:S.f.amen.includes("Whiteboard")};
+  return `<div class="body">
+    <div class="toprow"><img class="logo" src="${LOGO}" alt="StudySpace"><button class="avatar" data-a="tab" data-t="profile" aria-label="Your bookings">${ic("user")}</button></div>
+    <div class="greet"><p class="muted">${greeting()}</p>
+      <h1 class="display"><span>Find your</span><span class="line2"><span class="hl">study spot.</span>${sparkle(24)}</span></h1></div>
+    <form class="search" data-form="search" role="search">
+      <label class="field loud" for="q">${ic("search")}<span class="sr">Search rooms</span><input id="q" type="search" placeholder="Search rooms or buildings" value="${esc(S.query)}" autocomplete="off" enterkeyhint="search"></label>
+      <button type="button" class="filterbtn" data-a="go" data-to="filters" aria-label="Filters">${ic("sliders")}</button>
+    </form>
+    <div class="chips" aria-label="Quick filters">
+      <button class="chip" data-a="quick" data-k="quiet" aria-pressed="${qOn.quiet}">Quiet</button>
+      <button class="chip" data-a="quick" data-k="group" aria-pressed="${qOn.group}">Group study</button>
+      <button class="chip" data-a="quick" data-k="outlets" aria-pressed="${qOn.outlets}">Outlets</button>
+      <button class="chip" data-a="quick" data-k="board" aria-pressed="${qOn.board}">Whiteboard</button>
+    </div>
+    <div class="bento">
+      <button class="big" data-a="see-all">${sparkle(26)}<b>${open}</b><span>${open === 1 ? "room open now" : "rooms open now"}</span><span class="go">Browse ${ic("arrow")}</span></button>
+      <div class="side">
+        <button class="mini saved" data-a="tab" data-t="saved"><b>${S.saved.size} ${ic("heart")}</b><span>saved rooms</span></button>
+        <button class="mini bk" data-a="tab" data-t="profile"><b>${todayCount}</b><span>${todayCount === 1 ? "booking today" : "bookings today"}</span></button>
+      </div>
+    </div>
+    <div class="sechead"><h2 class="h3">Popular right now</h2><button class="link" data-a="see-all">See all</button></div>
+    ${card(pop)}
+  </div>`;
+},
+results(){
+  const list = results();
+  const chips = [];
+  if (S.query.trim()) chips.push(["query","",`“${esc(S.query.trim())}”`]);
+  if (S.f.building) chips.push(["building","",esc(S.f.building)]);
+  if (S.f.size) chips.push(["size","",`${S.f.size} people`]);
+  if (S.f.noise) chips.push(["noise","",S.f.noise]);
+  S.f.amen.forEach(a => chips.push(["amen",a,a]));
+  const sub = [S.f.building || "All buildings", S.f.size ? `${S.f.size} people` : "Any group size", S.f.noise || "Any noise level"].join(" · ");
+  return `<div class="body">
+    ${topbar("Results")}
+    <div><h2 class="h2">${list.length === 1 ? "1 room matches" : `${list.length} rooms match`}</h2><p class="muted small">${sub}</p></div>
+    <div class="chips">${chips.map(([k,v,l]) => `<button class="chip on" data-a="rm" data-k="${k}" data-v="${esc(v)}" aria-label="Remove filter ${l}">${l} <span class="x" aria-hidden="true">×</span></button>`).join("")}
+      <button class="chip" data-a="go" data-to="filters">${ic("sliders")} Edit filters</button></div>
+    ${list.length ? `<div class="list">${list.map(card).join("")}</div>` :
+      `<div class="empty"><h3 class="h3">No rooms match</h3><p class="muted small">Try removing a filter or searching for a building name.</p><button class="btn btn-secondary" data-a="clear">Clear all filters</button></div>`}
+    ${list.some(r => r.id === "nm01") ? `<div class="tip">${sparkle(20)}Room 01 usually fills up by noon. Book early!</div>` : ""}
+  </div>`;
+},
+filters(){
+  const n = results().length;
+  const pressed = b => `aria-pressed="${b}"`;
+  return `<div class="body">
+    ${topbar("Filters", `<button class="right" data-a="reset">Reset</button>`)}
+    <section class="group" aria-labelledby="fb"><h2 class="label" id="fb">Building</h2>
+      <div class="chips">${BUILDINGS.map(b => `<button class="chip" data-a="f-building" data-v="${esc(b)}" ${pressed(S.f.building === b)}>${esc(b)}</button>`).join("")}</div></section>
+    <section class="group" aria-labelledby="fs"><h2 class="label" id="fs">Group size</h2>
+      <div class="seg">${SIZES.map(s => `<button data-a="f-size" data-v="${s}" ${pressed(S.f.size === s)}>${s}</button>`).join("")}</div></section>
+    <section class="group" aria-labelledby="fn"><h2 class="label" id="fn">Noise level</h2>
+      <div class="opts3">${NOISES.map(([l,i]) => `<button class="opt" data-a="f-noise" data-v="${l}" ${pressed(S.f.noise === l)}>${ic(i)}${l}</button>`).join("")}</div></section>
+    <section class="group" aria-labelledby="fa"><h2 class="label" id="fa">Amenities</h2>
+      <div class="opts2">${AMENS.map(([l,i]) => `<button class="toggle" data-a="f-amen" data-v="${l}" ${pressed(S.f.amen.includes(l))}>${ic(i)}<span>${l}</span>${ic("check","ck")}</button>`).join("")}</div></section>
+  </div>
+  <div class="actions"><button class="btn btn-primary" data-a="apply" ${n ? "" : "disabled"}>${n ? `Show ${plural(n,"room","rooms")}` : "No rooms match"} ${n ? ic("arrow") : ""}</button></div>`;
+},
+details(){
+  const r = room(S.room), sv = S.saved.has(r.id);
+  const sticker = {Silent:"Silent zone",Quiet:"Quiet zone",Lively:"Lively room"}[r.noise];
+  return `<div class="body">
+    ${topbar("Room details")}
+    <div class="hero" aria-hidden="true"><span class="sticker">${sticker}</span>${sparkle(24)}
+      <svg class="desk" viewBox="0 0 150 130" fill="none" stroke="var(--violet)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 122h134"/><rect x="18" y="104" width="58" height="12" rx="3"/><rect x="24" y="92" width="50" height="12" rx="3"/><path d="M108 122V74l-20-26"/><path d="M78 44l16-14 12 14-16 14z"/><path d="M114 106h18v16h-18z"/><path d="M132 110h5a4 4 0 0 1 0 8h-5"/><path d="M119 100c0-4 4-4 4-8M125 100c0-4 4-4 4-8"/></svg></div>
+    <div><h2 class="h2">Room ${r.num}</h2><p class="where-line">${ic("pin")}${esc(r.name)} · ${esc(r.where)}</p></div>
+    <div class="stats">
+      <div class="stat"><small>SEATS</small><b>${r.size}</b></div>
+      <div class="stat"><small>NOISE</small><b>${r.noise}</b></div>
+      <div class="stat"><small>OUTLETS</small><b>${r.outlets}</b></div>
+    </div>
+    <p class="about-room">${esc(r.about)}</p>
+    <div class="chips">${r.amen.map(a => `<span class="chip">${ic(AMENS.find(x => x[0] === a)[1])}${a}</span>`).join("")}</div>
+    <div>${pill(nowState(r))}</div>
+  </div>
+  <div class="actions">
+    <button class="iconbtn ${sv ? "saved" : ""}" data-a="save" data-id="${r.id}" aria-pressed="${sv}" aria-label="${sv ? "Remove from saved" : "Save room"}">${ic("heart")}</button>
+    <button class="btn btn-primary" data-a="go" data-to="avail">Check availability ${ic("arrow")}</button>
+  </div>`;
+},
+avail(){
+  const r = room(S.room), d = DAYS[S.day], k = key(d);
+  const lbl = {open:"Open",booked:"Booked",walk:"Walk-in only",past:"Past",yours:"Your booking"};
+  return `<div class="body">
+    ${topbar("Availability")}
+    <p class="muted small">Room ${r.num} · ${esc(r.name)}</p>
+    <div class="monthrow"><h2 class="h3">${MON_LONG[d.getMonth()]} ${d.getFullYear()}</h2></div>
+    <div class="days" role="group" aria-label="Pick a day">${DAYS.map((x,i) =>
+      `<button class="day" data-a="day" data-i="${i}" aria-pressed="${i === S.day}" aria-label="${DOW_LONG[x.getDay()]} ${MON_LONG[x.getMonth()]} ${x.getDate()}"><small>${DOW[x.getDay()]}</small><b>${x.getDate()}</b></button>`).join("")}</div>
+    <div class="dayhead"><h3 class="h3">${S.day === 0 ? "Today" : DOW_LONG[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}</h3>
+      <div class="legend" aria-hidden="true"><span><i style="background:var(--mint-ink)"></i>Open</span><span><i style="background:var(--coral)"></i>Booked</span><span><i style="background:var(--lemon-ink)"></i>Walk-in</span></div></div>
+    <div class="slots" role="group" aria-label="Pick a start time">${HOURS.map(h => {
+      const st = slotState(r, k, h), sel = S.slot === h && st === "open";
+      return `<button class="slot ${st}" data-a="slot" data-h="${h}" ${st !== "open" ? "disabled" : ""} aria-pressed="${sel}">
+        <span><b>${h12(h)}:00 ${ap(h)}</b><small>${sel ? "Selected" : lbl[st]}</small></span>${sel ? ic("check") : ""}</button>`; }).join("")}</div>
+    ${S.slot != null ? `<div class="summary">${ic("clock")}${range(S.slot)} · 1 hour</div>` : `<p class="muted small">Tap an open time to reserve one hour. Walk-in rooms can't be booked ahead.</p>`}
+  </div>
+  <div class="actions"><button class="btn btn-primary" data-a="go" data-to="booking" ${S.slot == null ? "disabled" : ""}>Continue ${ic("arrow")}</button></div>`;
+},
+booking(){
+  const r = room(S.room), k = key(DAYS[S.day]);
+  return `<div class="body">
+    ${topbar("Review booking")}
+    <div class="ticket">
+      <div class="ticket-head"><div><b>Room ${r.num}</b><span>${esc(r.name)} · ${esc(r.where)}</span></div>${sparkle(22)}</div>
+      <div class="ticket-rows">
+        <div class="trow"><span class="ic">${ic("cal")}</span><div><small>Date</small><b>${longDate(k)}</b></div></div>
+        <div class="trow"><span class="ic">${ic("clock")}</span><div><small>Time</small><b>${range(S.slot)} (1 hour)</b></div></div>
+        <div class="trow"><span class="ic">${ic("users")}</span><div><small>Group</small><b>${r.size === "Solo" ? "Just you" : `${r.size} people`}</b></div></div>
+      </div>
+    </div>
+    <form class="group" data-form="book" id="bookform" novalidate>
+      <label class="label" for="star">Star ID</label>
+      <span class="field ${S.starErr ? "err" : ""}" id="starfield">${ic("id")}<input id="star" value="${esc(S.star)}" placeholder="ab1234cd" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="starhelp" ${S.starErr ? 'aria-invalid="true"' : ""}></span>
+      <p class="help ${S.starErr ? "bad" : ""}" id="starhelp">${S.starErr || "Your confirmation goes to your school email."}</p>
+    </form>
+  </div>
+  <div class="actions"><button class="btn btn-secondary" data-a="back">Back</button><button class="btn btn-primary" type="submit" form="bookform">Confirm booking ${ic("arrow")}</button></div>`;
+},
+confirm(){
+  const b = S.last, r = room(b.roomId);
+  return `<div class="body">
+    <div class="toprow"><img class="logo" src="${LOGO}" alt="StudySpace"><button class="iconbtn" data-a="tab" data-t="home" aria-label="Close">${ic("x")}</button></div>
+    <div class="celebrate" aria-hidden="true">
+      <svg class="confetti" viewBox="0 0 350 178" preserveAspectRatio="xMidYMid meet" stroke="var(--ink)" stroke-width="1.5"><rect x="60" y="40" width="10" height="16" rx="2" fill="var(--violet)" transform="rotate(-20 65 48)"/><rect x="280" y="34" width="10" height="16" rx="2" fill="var(--coral)" transform="rotate(25 285 42)"/><circle cx="84" cy="130" r="6" fill="var(--lemon)"/><circle cx="268" cy="138" r="6" fill="var(--lemon)"/><path d="M40 92c6 5 12-5 18 0" fill="none" stroke="var(--violet)" stroke-width="2.5" stroke-linecap="round"/><path d="M292 92c6 5 12-5 18 0" fill="none" stroke="var(--coral)" stroke-width="2.5" stroke-linecap="round"/><path d="M243 24C244 30 246 32 252 33C246 34 244 36 243 42C242 36 240 34 234 33C240 32 242 30 243 24Z" fill="var(--lemon)"/></svg>
+      <div class="checkdisc">${ic("check")}</div>
+    </div>
+    <h1 class="display center">You're booked!</h1>
+    <p class="muted center">Room ${r.num} is yours ${b.date === TODAY ? "today" : `on ${shortDate(b.date)}`} from ${range(b.hour).replace(" – ", " to ")}.</p>
+    <div class="sumbox">
+      <div><span>Room</span><b>${r.num} · ${esc(r.name)}</b></div>
+      <div><span>Date</span><b>${shortDate(b.date)}</b></div>
+      <div><span>Time</span><b>${range(b.hour)}</b></div>
+      <div><span>Star ID</span><b>${esc(b.star)}</b></div>
+    </div>
+  </div>
+  <div class="actions stack"><button class="btn btn-primary" data-a="tab" data-t="profile">See my bookings ${ic("arrow")}</button><button class="btn btn-secondary" data-a="tab" data-t="home">Back to home</button></div>`;
+},
+saved(){
+  const list = ROOMS.filter(r => S.saved.has(r.id));
+  return `<div class="body">
+    <header class="topbar"><h1>Saved rooms</h1><span class="count">${list.length}</span></header>
+    <p class="muted">Rooms you heart show up here.</p>
+    ${list.length ? `<div class="list">${list.map(card).join("")}</div><p class="muted small center">Tap a heart again to remove that room.</p>` :
+      `<div class="empty"><h3 class="h3">No saved rooms yet</h3><p class="muted small">Tap the heart on any room to keep it here for later.</p><button class="btn btn-secondary" data-a="see-all">Browse rooms</button></div>`}
+  </div>`;
+},
+profile(){
+  const list = [...S.bookings].sort((a,b) => (a.date + String(a.hour).padStart(2,"0")).localeCompare(b.date + String(b.hour).padStart(2,"0")));
+  return `<div class="body">
+    <div class="me"><span class="avatar">${ic("user")}</span><div><h1 class="h2">Your bookings</h1><p class="muted small">${list.length ? plural(list.length,"upcoming booking","upcoming bookings") : "Nothing booked yet"}</p></div></div>
+    ${list.length ? `<div class="list">${list.map(b => { const r = room(b.roomId); const asking = S.cancelAsk === b.id; return `
+      <div class="bk"><div class="bk-top"><div class="tile t-${r.tone}" aria-hidden="true"><small>ROOM</small><b>${r.num}</b></div>
+        <div class="info" style="padding-right:0"><span class="nm">Room ${r.num} · ${esc(r.name)}</span><span class="where">${ic("cal")}${shortDate(b.date)} · ${range(b.hour)}</span></div></div>
+        <div class="bk-actions">${asking ?
+          `<span class="q">Cancel this booking?</span><button class="sbtn" data-a="cancel-no">Keep it</button><button class="sbtn danger" data-a="cancel-yes" data-id="${b.id}">Yes, cancel</button>` :
+          `<button class="sbtn" data-a="open" data-id="${r.id}">View room</button><button class="sbtn" data-a="cancel-ask" data-id="${b.id}">Cancel booking</button>`}</div></div>`; }).join("")}</div>` :
+      `<div class="empty"><h3 class="h3">No bookings yet</h3><p class="muted small">Find an open room, pick a time and it will show up here.</p><button class="btn btn-primary" data-a="see-all">Find a room ${ic("arrow")}</button></div>`}
+    <p class="note">This is a class prototype. Rooms and schedules are sample data, and bookings are kept only in this browser. <button class="link" data-a="reset-demo" style="font-size:12px;padding:0">Reset the demo</button></p>
+  </div>`;
+}
+};
+
+// ---- render + navigation ----
+const app = document.getElementById("app");
+let toastTimer;
+function render(keepScroll){
+  const name = S.stack[S.stack.length - 1];
+  const prev = app.querySelector(".body");
+  const top = keepScroll && prev ? prev.scrollTop : 0;
+  const html = SCREENS[name]();
+  const hasActions = html.includes('class="actions');
+  app.innerHTML = `<section class="screen ${hasActions ? "has-actions" : ""} ${keepScroll ? "" : S.dir}" aria-label="${name}">${statusbar()}${html}</section>${nav()}<div class="toast" role="status" aria-live="polite"></div>`;
+  const body = app.querySelector(".body"); if (body) body.scrollTop = top;
+  S.dir = "";
+}
+function go(to){ S.stack.push(to); S.dir = "fwd"; render(); }
+function back(){ if (S.stack.length > 1){ S.stack.pop(); S.dir = "bwd"; render(); } }
+function tab(t){ S.stack = [t]; S.cancelAsk = null; S.dir = "fwd"; render(); }
+function toast(msg){
+  const t = app.querySelector(".toast"); if (!t) return;
+  t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+}
+const toggle = (cur, v) => cur === v ? null : v;
+
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-a]"); if (!el || el.disabled) return;
+  const a = el.dataset.a, id = el.dataset.id, v = el.dataset.v;
+  switch (a){
+    case "back": back(); break;
+    case "tab": tab(el.dataset.t); break;
+    case "go": if (el.dataset.to === "avail"){ S.day = 0; S.slot = null; } if (el.dataset.to === "booking"){ S.starErr = ""; } go(el.dataset.to); break;
+    case "open": S.room = id; go("details"); break;
+    case "save": {
+      const had = S.saved.has(id); had ? S.saved.delete(id) : S.saved.add(id); persist(); render(true);
+      toast(had ? "Removed from saved" : "Saved to your rooms"); break; }
+    case "quick": {
+      const k = el.dataset.k;
+      if (k === "quiet") S.f.noise = toggle(S.f.noise, "Quiet");
+      if (k === "group") S.f.size = toggle(S.f.size, "5–8");
+      if (k === "outlets" || k === "board"){ const n = k === "outlets" ? "Outlets" : "Whiteboard"; S.f.amen = S.f.amen.includes(n) ? S.f.amen.filter(x => x !== n) : [...S.f.amen, n]; }
+      go("results"); break; }
+    case "see-all": S.query = ""; S.f = {building:null,size:null,noise:null,amen:[]}; if (S.stack[0] !== "home") S.stack = ["home"]; go("results"); break;
+    case "clear": S.query = ""; S.f = {building:null,size:null,noise:null,amen:[]}; render(true); break;
+    case "rm": {
+      const k = el.dataset.k;
+      if (k === "query") S.query = ""; else if (k === "amen") S.f.amen = S.f.amen.filter(x => x !== v); else S.f[k] = null;
+      render(true); break; }
+    case "f-building": S.f.building = toggle(S.f.building, v); render(true); break;
+    case "f-size": S.f.size = toggle(S.f.size, v); render(true); break;
+    case "f-noise": S.f.noise = toggle(S.f.noise, v); render(true); break;
+    case "f-amen": S.f.amen = S.f.amen.includes(v) ? S.f.amen.filter(x => x !== v) : [...S.f.amen, v]; render(true); break;
+    case "reset": S.f = {building:null,size:null,noise:null,amen:[]}; render(true); toast("Filters cleared"); break;
+    case "apply": {
+      const prev = S.stack[S.stack.length - 2];
+      if (prev === "results"){ back(); } else { S.stack[S.stack.length - 1] = "results"; S.dir = "fwd"; render(); }
+      break; }
+    case "day": S.day = Number(el.dataset.i); S.slot = null; render(true); break;
+    case "slot": { const h = Number(el.dataset.h); S.slot = S.slot === h ? null : h; render(true); break; }
+    case "cancel-ask": S.cancelAsk = id; render(true); break;
+    case "cancel-no": S.cancelAsk = null; render(true); break;
+    case "cancel-yes": S.bookings = S.bookings.filter(b => b.id !== id); S.cancelAsk = null; persist(); render(true); toast("Booking cancelled"); break;
+    case "reset-demo":
+      S.saved = new Set(SEED_SAVED); S.bookings = []; S.query = ""; S.f = {building:null,size:null,noise:null,amen:[]};
+      S.star = ""; S.starErr = ""; persist(); S.stack = ["home"]; render(); toast("Demo reset"); break;
+  }
+});
+
+document.addEventListener("input", e => {
+  if (e.target.id === "q") S.query = e.target.value;
+  if (e.target.id === "star"){
+    S.star = e.target.value;
+    if (S.starErr){ S.starErr = ""; document.getElementById("starfield").classList.remove("err"); e.target.removeAttribute("aria-invalid");
+      const h = document.getElementById("starhelp"); h.classList.remove("bad"); h.textContent = "Your confirmation goes to your school email."; }
+  }
+});
+
+document.addEventListener("submit", e => {
+  const f = e.target.dataset.form; if (!f) return;
+  e.preventDefault();
+  if (f === "search"){ S.query = document.getElementById("q").value; go("results"); }
+  if (f === "book"){
+    const id = S.star.trim().toLowerCase();
+    if (!/^[a-z]{2}\d{4}[a-z]{2}$/.test(id)){
+      S.starErr = id ? "That doesn't look like a Star ID. It should be two letters, four numbers, then two letters, like ab1234cd." : "Enter your Star ID to confirm the booking.";
+      render(true); document.getElementById("star").focus(); return;
+    }
+    const k = key(DAYS[S.day]);
+    if (slotState(room(S.room), k, S.slot) !== "open"){ toast("That time was just taken. Pick another."); back(); return; }
+    const b = {id:"b" + Date.now(), roomId:S.room, date:k, hour:S.slot, star:id};
+    S.bookings.push(b); S.last = b; S.slot = null; S.star = id; persist();
+    S.stack = ["home","confirm"]; S.dir = "fwd"; render();
+  }
+});
+
+render();
+})();
+</script>
+
+</body>
+</html>
